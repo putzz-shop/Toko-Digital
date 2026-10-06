@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'buahkadu939@gmail.com'
+      );
+    }
+
+    // Validation Blueprint for Orders
+    function isValidOrder(data) {
+      return data.customerName is string &&
+        data.customerName.size() > 0 &&
+        data.customerName.size() <= 100 &&
+        data.customerContact is string &&
+        data.customerContact.size() > 0 &&
+        data.customerContact.size() <= 100 &&
+        data.paymentMethod in ['qris', 'dana'] &&
+        data.totalAmount is number &&
+        data.totalAmount >= 0 &&
+        data.status in ['pending', 'verified', 'completed', 'cancelled'] &&
+        data.createdAt is string &&
+        data.createdAt.size() <= 64 &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('items' in data) || (data.items is list && data.items.size() <= 50));
+    }
+
+    // Validation Blueprint for UserProfile
+    function isValidUserProfile(data) {
+      return data.uid is string &&
+        data.uid == request.auth.uid &&
+        (!('username' in data) || (data.username is string && data.username.size() <= 50)) &&
+        (!('contact' in data) || (data.contact is string && data.contact.size() <= 100)) &&
+        (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 120)) &&
+        (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    // Connection validation test document
+    match /test/{testId} {
+      allow read: if true;
+    }
+
+    // Customer Orders Collection
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && (
+        isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid)
+      );
+
+      // Cost-optimized query enforcer: No get() or exists() inside allow list
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.token.email == 'buahkadu939@gmail.com'
+      );
+
+      allow create: if isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().status == 'pending' &&
+        (!isSignedIn() || incoming().userId == request.auth.uid || incoming().userId == null);
+
+      allow update: if isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        (isAdmin() || (
+          isSignedIn() &&
+          existing().userId == request.auth.uid &&
+          incoming().userId == existing().userId &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['notes', 'customerContact'])
+        ));
+
+      allow delete: if isValidId(orderId) && isAdmin();
+    }
+
+    // User Profile Collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (
+        request.auth.uid == userId || isAdmin()
+      );
+
+      allow list: if isAdmin();
+
+      allow create: if isValidId(userId) &&
+        isSignedIn() &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming());
+
+      allow update: if isValidId(userId) &&
+        isSignedIn() &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming());
+
+      allow delete: if isValidId(userId) && (
+        request.auth.uid == userId || isAdmin()
+      );
+    }
+  }
+}

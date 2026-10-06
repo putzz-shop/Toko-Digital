@@ -1,0 +1,8 @@
+{
+  "name": "Remix PutzzPedia Hosting",
+  "description": "Layanan penyedia RAM Panel server hosting, Reseller, Tangan Kanan, dan ADP dengan harga terjangkau, proses instan, dan pembayaran via QRIS serta DANA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

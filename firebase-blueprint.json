@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Customer order for PutzzPedia hosting or web services",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order"
+        },
+        "customerName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Customer name or panel username"
+        },
+        "customerContact": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Customer WhatsApp number or Telegram handle"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Additional notes or requirements"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["qris", "dana"],
+          "description": "Selected payment method"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total order amount in IDR"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "verified", "completed", "cancelled"],
+          "description": "Order processing status"
+        },
+        "items": {
+          "type": "array",
+          "description": "List of ordered products and quantities"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of customer if logged in, or anonymous ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the order was submitted"
+        }
+      },
+      "required": ["customerName", "customerContact", "paymentMethod", "totalAmount", "status", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with saved contact and panel username",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "User display name"
+        },
+        "username": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Panel username"
+        },
+        "contact": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "WhatsApp or Telegram contact"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Account creation timestamp"
+        }
+      },
+      "required": ["uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of customer orders submitted to PutzzPedia"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Customer profile data"
+    }
+  }
+}
